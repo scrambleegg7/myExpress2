@@ -30,9 +30,13 @@ exports.getCourse = (req, res) => {
 
     Course.find()
     .then( result => {
-        console.log("** course successfully saved : result --> ",result)
+        console.log("** course successfully retrieved : result --> ",result)
 
-        res.json(result)
+        res.status(200).json(
+            {courses: result}
+        )
+
+
 
     })
     .catch( err => {
