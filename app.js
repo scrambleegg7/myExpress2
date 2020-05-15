@@ -1,33 +1,36 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
+const express = require('express');
+const path = require('path');
+//const generatePassword = require('password-generator');
+
+const app = express();
+
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var bodyParser = require('body-parser');
-
 const cors = require('cors');
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
-var courseRouter = require('./routes/course');
-var listRouter = require('./routes/listings');
 
-var app = express();
-app.use(express.json());
+const morgan = require('morgan');
 
-const mongoose = require('mongoose').set('debug', true);
+const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 dotenv.config();
+
+var courseRouter = require('./routes/course');
+
+
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, 'build')));
 
 
 // mongo DB
 mongoose.connect(
-    process.env.MONGO_URI, 
-    { 
-        useUnifiedTopology: true, 
-        useNewUrlParser: true, 
-        useFindAndModify: false 
-    }
+  process.env.MONGO_URI, 
+  { 
+      useUnifiedTopology: true, 
+      useNewUrlParser: true, 
+      useFindAndModify: false 
+  }
 )
 .then( () => console.log("mongoDB Successfully connected") )
 
@@ -35,49 +38,26 @@ mongoose.connection.on("error", err => {
 console.log(`mongoDB connection error: ${err.message}`)
 });
 
-
-
-
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
-
-app.use(cors())
-app.use(logger('dev'));
+app.use( morgan("dev") );
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
-//app.use(express.static(path.join(__dirname, 'public')));
+//app.use(expressValidator())
 
-app.use(express.static(path.join(__dirname, 'build')));
+app.use(cors())  
 
 
-app.use('/', indexRouter);
-app.use('/', listRouter);
-app.use('/', usersRouter);
+
 app.use('/', courseRouter);
 
 
-// catch 404 and forward to error handler
-app.use( (req, res, next) => {
-    next(createError(404));
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get('*', (req, res) => {
+    
+    res.sendFile(path.join(__dirname+'/build/index.html'));
 });
 
-console.log("MongoURI to be connected....",process.env.MONGO_URI)
-console.log("")
+const port = process.env.PORT || 5000;
+app.listen(port);
 
-
-
-
-// error handler
-app.use( (err, req, res, next) => {
-    // set locals, only providing error in development
-    res.locals.message = err.message;
-    res.locals.error = req.app.get('env') === 'development' ? err : {};
-
-    // render the error page
-    res.status(err.status || 500);
-    res.render('error');
-});
-
-module.exports = app;
+console.log(`Access MongoDB server ---  listening on ${port}`);
